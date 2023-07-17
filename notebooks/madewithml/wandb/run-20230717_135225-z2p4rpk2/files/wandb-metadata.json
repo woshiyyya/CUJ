@@ -1,0 +1,23 @@
+{
+    "os": "Linux-5.19.0-1027-aws-x86_64-with-glibc2.31",
+    "python": "3.9.15",
+    "heartbeatAt": "2023-07-17T20:52:26.106097",
+    "startedAt": "2023-07-17T20:52:25.239098",
+    "docker": null,
+    "gpu": "Tesla T4",
+    "gpu_count": 1,
+    "cpu_count": 16,
+    "cuda": null,
+    "args": null,
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "https://github.com/anyscale/CUJ",
+        "commit": "1016192164d39406348505e51de0756c8012f2ce"
+    },
+    "email": "xiaoyunxuan1998@gmail.com",
+    "root": "/home/ray/yx-dev",
+    "host": "ip-10-0-59-208",
+    "username": "ray",
+    "executable": "/home/ray/anaconda3/bin/python"
+}
