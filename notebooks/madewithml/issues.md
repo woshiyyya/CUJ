@@ -26,11 +26,9 @@ traceback: Traceback (most recent call last):
 ModuleNotFoundError: No module named 'evaluate_modules'
 ```
 
-Found an GH Issue: https://github.com/huggingface/transformers/issues/22408, but seems that we haven't resolve this yet. 
+Found an GH Issue: https://github.com/huggingface/transformers/issues/22408, but seems that we haven't resolve this yet. It turns out that this happens not only  when using ray in Transformer, also when using Transformer in ray.
 
-This is not only a problem when using ray in Transformer, but also happens when using Transformer in ray.
-
-This is because `evaluate.load` will download scripts for the evaluation metric into local cache dir, which is not accessible from remote worker. 
+Under the hood, `evaluate.load` will download scripts for the evaluation metric into local cache dir, which is not accessible from remote worker. 
 
 **Solution:** Moving `accuracy = evaluate.load("accuracy")` into `train_loop_per_worker`
 
@@ -44,22 +42,22 @@ This is because `evaluate.load` will download scripts for the evaluation metric 
 total 627M
 drwxr-xr-x 2 ray users 4.0K Jul 17 11:40 .
 drwxr-xr-x 3 ray users 4.0K Jul 17 10:52 ..
--rw------- 1 ray users 778M Jul 17 11:40 core.68866 <-
+-rw------- 1 ray users 778M Jul 17 11:40 core.68866 <- This one
 -rw-r--r-- 1 ray users 1.1K Jul 17 11:40 issues.md
 -rw-r--r-- 1 ray users  774 Jul 17 10:52 kill.py
 -rw-r--r-- 1 ray users 265K Jul 17 11:40 madewithml.ipynb
 ```
 
-The huge core dumps leads to this failure below. This file should not be placed in the current working directory.
+Ray will set up the runtime env by packaging all the files in the current working directory and sending them to the remote node. Huge core dumps cause this failure:
 
 ```
 RuntimeEnvSetupError: Failed to set up runtime environment.
 Failed to upload package /tmp/ray_latest_runtime_env.zip to the Ray cluster: Package size (777.48MiB) exceeds the maximum size of 500.00MiB. You can exclude large files using the 'excludes' option to the runtime_env or provide a remote URI of a zip file using protocols such as 's3://', 'https://' and so on, refer to https://docs.ray.io/en/latest/ray-core/handling-dependencies.html#api-reference.
 ```
 
-**Workaround:** Maunally delete the dump files.
+**Workaround:** Maunally delete the dump files. 
 
-**Action:** Discuss with Core team and move this out of CWD?
+**Action:** This file should not be placed in the current working directory. Discuss with Core team and move this out of CWD?
 
 
 ## 3. HF dataset cache file not found
