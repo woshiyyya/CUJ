@@ -9,6 +9,71 @@ My training settings:
 - Experiment Tracking: `wandb`
 - Storage: `/mnt/cluster_storage`
 
+
+- Cluster environment: `default_cluster_env_ml_2.5.1_py39:1`
+
+# Environment setup
+Time: 10 min
+
+I was using anyscale ray-ml docker, which already contains most of the required libraries. 
+
+I maunally installed HF evaluate library.
+
+Notes:
+- Using ray-ml docker might not be a real user experience. Users might start from an empty env and install packages one-by-one.
+
+
+# Data Preprocessing
+Time: 20 min
+
+I choose to use HF datasets for preprocessing, which could be the first choice for OSS ML users. It won't take me much time if you are familiar with HF's APIs.
+
+## Compare HF datasets and Ray Datasets
+
+| | HF Datasets | Ray Data |
+| - | - | - |
+| Batch format | HF Dataset Batch | Pandas/Numpy |
+| Cache | Stores previously downloaded and processed datasets with local PyArrow files | In object store |
+| Batch Mapping | `.map(batch=True/False)` | `.map_batches()` |
+| Data Loading | `load_dataset(streaming=)` Can either create Map-style Dataset or IterableDataset | Iterable by default |
+
+
+HF dataset is well integrated with the HF ecosystem:
+- HF Datasets: directly load opensource dataset
+- HF Datasets: easy batch processing
+- HF Evaluate: load evaluation metrics from HF Dataset
+- HF Transformers: load evaluation metrics + HF Datasets into Trainer
+
+Question:
+
+Our current logic for TransformerTrainer is:
+- convert HF dataset to Ray dataset: `ray.data.from_huggingface()` 
+- preprocess in ray style: `ray_ds.map_batches()`
+- Convert Ray DataIterator to HF dataset: `TransformersTrainer.process_dataset_for_hf()`
+
+We are converting it back and force: HF Dataset -> Ray Dataset -> HF IterableDataset.
+
+Ray Data should perform some benchmarking to demonstrate at what scale it would have performance benefits over HF Datasets. Below that scale, we recommend using HF Datasets instead.
+
+# Model Definition and configuration
+Time: 15min
+
+It only took me 1min to define a bert-large-cased model, since `from_pretrained()` has configured everything for me. The only annoying thing is to define a `AIRReportCallback` by myself. It collects metrics and calls `session.report` internally. This should not be a burden for users after we make `ray.train.huggingface.transformers.AIRReportCallback` public.
+
+
+# Model Training
+Time: ~1h
+
+Debugging training code takes a lot of time. The major obstacle is that I did many operations on the head node and use them as global variable in the `train_loop_per_worker`.
+
+- Data
+  - HF Dataset cannot find cache file on worker node
+- Wandb
+  - environment variable won't be copied the worker node
+- Evaluate
+  - import error when you load evaluate metrics outside of training loop
+
+# Issues
 ## 1. `evaluate` library import error
 
 ```
